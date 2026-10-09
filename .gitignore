@@ -1,0 +1,20 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# 运行时数据（每人不同）
+data/
+raw/
+logs/
+
+# 个人凭据
+.env
+.env.local
+.lark-*.json
+*.log
+server-boot.log
+
+# 系统
+.DS_Store
+_trash/
+dist/

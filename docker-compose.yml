@@ -1,0 +1,17 @@
+services:
+  ai-assistant:
+    image: node:18-alpine
+    container_name: ai-assistant
+    working_dir: /app
+    # 首次启动自动装依赖（约1-2分钟），之后秒启
+    command: sh -c "npm install --omit=dev --no-audit --no-fund && node server.js"
+    ports:
+      - "3000:3000"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - PORT=3000
+      - DATA_ROOT=/app/data
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./:/app
+    restart: unless-stopped

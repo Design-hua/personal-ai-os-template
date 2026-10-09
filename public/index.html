@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="AI OS">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<title>我的个人AI操作系统</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: #0f1115;
+    color: #e6e6e6;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 12px 16px;
+    background: #1a1d23;
+    border-bottom: 1px solid #2a2d33;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex: 1;
+    text-align: center;
+  }
+  .header-btn {
+    background: transparent;
+    color: #4a9eff;
+    border: 1px solid #2a2d33;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    font-size: 13px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .header-btn:active { opacity: 0.7; }
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .msg {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #1a1d23;
+    border: 1px solid #2a2d33;
+    word-break: break-word;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .msg.user { border-left: 3px solid #4a9eff; }
+  .msg.answer { border-left: 3px solid #50c878; max-width: 100%; overflow-x: hidden; }
+  .msg.saved { border-left: 3px solid #f5a623; }
+  .msg.error { border-left: 3px solid #ff6b6b; background: #2a1515; }
+  .msg .tag {
+    display: inline-block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 6px;
+  }
+  .msg pre {
+    background: #0f1115;
+    padding: 8px;
+    border-radius: 6px;
+    overflow-x: hidden;
+    font-size: 13px;
+    margin-top: 6px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
+  .msg.answer pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
+  footer {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    background: #1a1d23;
+    border-top: 1px solid #2a2d33;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  textarea {
+    flex: 1;
+    background: #0f1115;
+    color: #e6e6e6;
+    border: 1px solid #2a2d33;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 16px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: none;
+    min-height: 44px;
+    max-height: 160px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  textarea:focus { border-color: #4a9eff; }
+  button {
+    background: #4a9eff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0 18px;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-appearance: none;
+    transition: opacity 0.15s;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:active { opacity: 0.8; }
+  .empty {
+    text-align: center;
+    color: #555;
+    padding: 40px 20px;
+    font-size: 13px;
+  }
+  .meta {
+    font-size: 11px;
+    color: #666;
+    margin-top: 6px;
+  }
+  /* 认知引擎抽屉 */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    z-index: 50;
+  }
+  .overlay.open { display: block; }
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 480px;
+    background: #14161b;
+    z-index: 51;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid #2a2d33;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .drawer-head h2 {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .drawer-close {
+    background: transparent;
+    color: #888;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    padding: 0 8px;
+    height: 32px;
+    cursor: pointer;
+  }
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pu-item {
+    background: #1a1d23;
+    border: 1px solid #2a2d33;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .pu-item .pu-time {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 6px;
+  }
+  .pu-item .pu-row {
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 3px 0;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .pu-item .pu-label {
+    color: #4a9eff;
+    font-weight: 500;
+  }
+  .pu-item .pu-del {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #2a2d33;
+    border-radius: 6px;
+    padding: 0 8px;
+    height: 26px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .pu-item .pu-del:active { opacity: 0.6; }
+  .pu-empty {
+    text-align: center;
+    color: #555;
+    padding: 40px 20px;
+    font-size: 13px;
+  }
+  .pu-badge {
+    display: inline-block;
+    background: #4a9eff;
+    color: white;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  /* ============ 决策/项目 抽屉 ============ */
+  .tabs { display: flex; flex-shrink: 0; border-bottom: 1px solid #2a2d33; }
+  .tab {
+    flex: 1; background: transparent; color: #888; border: none; border-radius: 0;
+    height: 42px; font-size: 14px; font-weight: 500;
+    border-bottom: 2px solid transparent;
+  }
+  .tab.active { color: #4a9eff; border-bottom-color: #4a9eff; background: transparent; }
+  .create-box {
+    background: #1a1d23; border: 1px solid #2a2d33; border-radius: 10px;
+    padding: 10px; margin-bottom: 12px;
+  }
+  .create-box textarea, .create-box input {
+    width: 100%; background: #0f1115; color: #e6e6e6;
+    border: 1px solid #2a2d33; border-radius: 8px;
+    padding: 9px 10px; font-size: 14px; font-family: inherit; line-height: 1.5;
+    outline: none; -webkit-appearance: none; margin-bottom: 8px;
+  }
+  .create-box textarea { resize: none; min-height: 64px; }
+  .create-box button { width: 100%; height: 40px; font-size: 14px; }
+  .dp-item {
+    background: #1a1d23; border: 1px solid #2a2d33; border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .dp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .dp-title { font-size: 14px; font-weight: 500; line-height: 1.5; flex: 1; }
+  .pill {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+  }
+  .pill.pending { background: #3a3320; color: #f5c84a; }
+  .pill.do { background: #1e3a24; color: #5fd98a; }
+  .pill.dont { background: #3a2020; color: #ff9b9b; }
+  .pill.hold { background: #2d2d3a; color: #aab0ff; }
+  .pill.plan { background: #1e2f3a; color: #6fc3ff; }
+  .pill.doing { background: #1e3a24; color: #5fd98a; }
+  .pill.pause { background: #2d2d3a; color: #aab0ff; }
+  .pill.done { background: #243020; color: #9ad96a; }
+  .pill.exit { background: #3a2020; color: #ff9b9b; }
+  .dp-meta { font-size: 11px; color: #888; margin-top: 6px; }
+  .dp-detail { margin-top: 10px; border-top: 1px solid #2a2d33; padding-top: 10px; }
+  .sec { margin: 9px 0; }
+  .sec h4 { font-size: 12px; color: #4a9eff; font-weight: 600; margin-bottom: 3px; }
+  .sec .txt { font-size: 13px; white-space: pre-wrap; line-height: 1.65; color: #cfcfcf; word-break: break-word; }
+  .sec.ai h4 { color: #b07cff; }
+  .sec.mine h4 { color: #50c878; }
+  .act-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .act-row button {
+    height: 34px; padding: 0 12px; font-size: 12px; font-weight: 500;
+    background: #2a2d33; color: #e6e6e6; border: 1px solid #3a3d43;
+  }
+  .act-row button.primary { background: #4a9eff; border-color: #4a9eff; color: #fff; }
+  .act-row button.good { background: #1e3a24; border-color: #2f5a3a; color: #5fd98a; }
+  .act-row button.bad { background: #3a2020; border-color: #5a2d2d; color: #ff9b9b; }
+  .act-row button:disabled { opacity: 0.5; }
+  .dp-select {
+    background: #0f1115; color: #e6e6e6; border: 1px solid #2a2d33; border-radius: 8px;
+    height: 36px; font-size: 13px; padding: 0 8px; -webkit-appearance: none; flex: 1; min-width: 130px;
+  }
+  .inline-form { margin-top: 8px; }
+  .inline-form textarea {
+    width: 100%; background: #0f1115; color: #e6e6e6; border: 1px solid #2a2d33;
+    border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit;
+    min-height: 56px; resize: none; outline: none;
+  }
+  .check-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa; margin: 6px 0; }
+  .dp-empty { text-align: center; color: #555; padding: 36px 20px; font-size: 13px; }
+  .dp-tip { font-size: 11px; color: #666; line-height: 1.6; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <button class="header-btn" id="openProfileBtn" type="button">认知引擎</button>
+  <h1>我的个人AI操作系统</h1>
+  <button class="header-btn" id="openDecideBtn" type="button">决策/项目</button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2>认知引擎</h2>
+    <button class="drawer-close" id="drawerClose" type="button">×</button>
+  </div>
+  <div class="drawer-body" id="profileList">
+    <div class="pu-empty">加载中...</div>
+  </div>
+</aside>
+
+<aside class="drawer" id="decideDrawer">
+  <div class="drawer-head">
+    <h2>决策与项目</h2>
+    <button class="drawer-close" id="decideDrawerClose" type="button">×</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" type="button" data-tab="decision">决策卡</button>
+    <button class="tab" type="button" data-tab="project">项目卡</button>
+  </div>
+  <div class="drawer-body" id="decisionPane">
+    <div class="create-box">
+      <textarea id="newDecisionInput" placeholder="把要决策的事写清楚，例如：我要不要投 X 项目？要不要换工作？"></textarea>
+      <button id="newDecisionBtn" type="button">做十维尽调并建卡</button>
+    </div>
+    <div class="dp-tip">AI 只做尽调、给倾向，卡状态默认「🟡待我拍板」。做/不做/暂缓只能你本人拍板。</div>
+    <div id="decisionList"><div class="dp-empty">加载中...</div></div>
+  </div>
+  <div class="drawer-body" id="projectPane" hidden>
+    <div class="create-box">
+      <input id="newProjectName" type="text" placeholder="项目名称">
+      <textarea id="newProjectBrief" placeholder="补充说明（可选）：想法、背景、已有的资源"></textarea>
+      <button id="newProjectBtn" type="button">建项目卡（AI 拟规划草案）</button>
+    </div>
+    <div class="dp-tip">新项目默认「🌱规划中」，AI 不会替你开始或结束一个项目；进展和状态都由你掌握。</div>
+    <div id="projectList"><div class="dp-empty">加载中...</div></div>
+  </div>
+</aside>
+<main id="list">
+  <div class="empty">说点什么吧 —— 决策、进展、思考，或直接提问</div>
+</main>
+<footer>
+  <div class="input-row">
+    <textarea id="input" placeholder="输入内容... (Enter 发送，Shift+Enter 换行)" rows="1"></textarea>
+    <button id="send" type="button">发送</button>
+  </div>
+</footer>
+
+<script>
+(function() {
+  const list = document.getElementById('list');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('send');
+  let sending = false;
+  let conversationHistory = []; // [{role:'user'|'assistant', content:'...'}]，最多 10 轮
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function addMsg(kind, content, tag) {
+    // 移除空提示
+    const empty = list.querySelector('.empty');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = 'msg ' + kind;
+    let html = '';
+    if (tag) html += `<div class="tag">${escapeHtml(tag)}</div>`;
+    if (kind === 'answer') {
+      html += `<pre>${escapeHtml(content)}</pre>`;
+    } else {
+      html += escapeHtml(content);
+    }
+    div.innerHTML = html;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
+    return div;
+  }
+
+  function autoResize() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+  }
+
+  function pushHistory(role, content) {
+    if (!content) return;
+    conversationHistory.push({ role, content });
+    // 保留最近 10 轮 = 20 条
+    if (conversationHistory.length > 20) {
+      conversationHistory.splice(0, conversationHistory.length - 20);
+    }
+  }
+
+  async function send() {
+    if (sending) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    sending = true;
+    sendBtn.disabled = true;
+    input.value = '';
+    autoResize();
+
+    addMsg('user', text, '');
+    pushHistory('user', text);
+
+    const loading = addMsg('answer', '思考中...', 'AI');
+
+    try {
+      const resp = await fetch('/api/input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, history: conversationHistory }),
+      });
+      const data = await resp.json();
+
+      loading.remove();
+
+      if (!data.ok) {
+        addMsg('error', data.error || '请求失败', '错误');
+        return;
+      }
+
+      if (data.mode === 'chat') {
+        // 对话回应：不存，AI 接话
+        addMsg('answer', data.reply || '(空)', 'AI');
+        pushHistory('assistant', data.reply || '');
+      } else if (data.mode === 'answer') {
+        // 提问：不存，AI 回答
+        addMsg('answer', data.reply || '(空回答)', 'AI 回答');
+        pushHistory('assistant', data.reply || '');
+      } else if (data.mode === 'saved') {
+        // 记录已存（不进对话历史，因为下次问"还有什么"时记录已落盘可被读回）
+        let body = `已保存为「${data.type}」\n标题：${data.title}\n目录：${data.dir}\n文件：${data.file}`;
+        if (data.profileUpdated) {
+          body += `\n认知引擎：+${data.profileItems} 条`;
+        }
+        addMsg('saved', body, '记录已存' + (data.profileUpdated ? ' · 认知+' + data.profileItems : ''));
+      }
+    } catch (e) {
+      loading.remove();
+      addMsg('error', e.message || '网络错误', '错误');
+    } finally {
+      sending = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('input', autoResize);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  autoResize();
+  input.focus();
+
+  // ============ 认知引擎抽屉 ============
+  const overlay = document.getElementById('overlay');
+  const drawer = document.getElementById('drawer');
+  const openProfileBtn = document.getElementById('openProfileBtn');
+  const drawerClose = document.getElementById('drawerClose');
+  const profileList = document.getElementById('profileList');
+
+  function openDrawer() {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+    loadProfileUpdates();
+  }
+  function closeDrawer() {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+  }
+  openProfileBtn.addEventListener('click', openDrawer);
+  drawerClose.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+
+  function renderEntry(text) {
+    // text: 形如 "## 时间\n\n**原记录**：...\n**提取内容**：...\n**类型**：...\n**置信度**：...\n**ID**：...\n---"
+    const rows = [];
+    let time = '';
+    const lines = text.split('\n');
+    const fieldMap = {
+      '原记录': '原记录',
+      '提取内容': '提取内容',
+      '类型': '类型',
+      '置信度': '置信度',
+      'ID': 'ID',
+    };
+    for (const line of lines) {
+      const tm = line.match(/^##\s+(.+)$/);
+      if (tm) { time = tm[1]; continue; }
+      for (const k in fieldMap) {
+        const re = new RegExp('^\\*\\*' + k + '\\*\\*[::]\\s*(.*)$');
+        const m = line.match(re);
+        if (m) {
+          rows.push({ k, v: m[1] });
+          break;
+        }
+      }
+    }
+    let html = '';
+    if (time) html += `<div class="pu-time">${escapeHtml(time)}</div>`;
+    for (const r of rows) {
+      if (r.k === 'ID') continue;
+      html += `<div class="pu-row"><span class="pu-label">${escapeHtml(r.k)}：</span>${escapeHtml(r.v)}</div>`;
+    }
+    return html;
+  }
+
+  async function loadProfileUpdates() {
+    profileList.innerHTML = '<div class="pu-empty">加载中...</div>';
+    try {
+      const resp = await fetch('/api/profile-updates');
+      const data = await resp.json();
+      if (!data.ok) {
+        profileList.innerHTML = `<div class="pu-empty">加载失败：${escapeHtml(data.error || '')}</div>`;
+        return;
+      }
+      const entries = data.entries || [];
+      if (entries.length === 0) {
+        profileList.innerHTML = '<div class="pu-empty">暂无认知引擎记录</div>';
+        return;
+      }
+      profileList.innerHTML = '';
+      for (const e of entries) {
+        const div = document.createElement('div');
+        div.className = 'pu-item';
+        const id = e.id || '';
+        div.innerHTML =
+          `<button class="pu-del" type="button" data-id="${escapeHtml(id)}">删除</button>` +
+          renderEntry(e.text || '');
+        profileList.appendChild(div);
+      }
+      // 绑定删除
+      profileList.querySelectorAll('.pu-del').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          if (!id) return;
+          if (!confirm('确定删除此条认知？')) return;
+          try {
+            const r = await fetch('/api/profile-updates/' + id, { method: 'DELETE' });
+            const d = await r.json();
+            if (!d.ok) {
+              alert('删除失败：' + (d.error || ''));
+              return;
+            }
+            loadProfileUpdates();
+          } catch (err) {
+            alert('网络错误：' + err.message);
+          }
+        });
+      });
+    } catch (e) {
+      profileList.innerHTML = `<div class="pu-empty">网络错误：${escapeHtml(e.message || '')}</div>`;
+    }
+  }
+})();
+</script>
+<script>
+// ============ 决策卡 / 项目卡 网页入口 ============
+(function() {
+  const overlay = document.getElementById('overlay');
+  const decideDrawer = document.getElementById('decideDrawer');
+  const openDecideBtn = document.getElementById('openDecideBtn');
+  const decideDrawerClose = document.getElementById('decideDrawerClose');
+  const decisionPane = document.getElementById('decisionPane');
+  const projectPane = document.getElementById('projectPane');
+  const decisionList = document.getElementById('decisionList');
+  const projectList = document.getElementById('projectList');
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  async function api(url, opts) {
+    const resp = await fetch(url, opts);
+    const data = await resp.json().catch(() => ({ ok: false, error: '返回解析失败' }));
+    if (!data.ok) throw new Error(data.error || '请求失败');
+    return data;
+  }
+  function post(url, body) {
+    return api(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+  }
+
+  const D_PILL = { '🟡待我拍板': 'pending', '✅决定做': 'do', '⛔决定不做': 'dont', '⏸暂缓': 'hold' };
+  const P_PILL = { '🌱规划中': 'plan', '🚀推进中': 'doing', '⏸暂停': 'pause', '✅已完成': 'done', '🚪已退出': 'exit' };
+  const D_STATUSES = ['🟡待我拍板', '✅决定做', '⛔决定不做', '⏸暂缓'];
+  const P_STATUSES = ['🌱规划中', '🚀推进中', '⏸暂停', '✅已完成', '🚪已退出'];
+  const pill = (map, s) => `<span class="pill ${map[s] || ''}">${esc(s || '—')}</span>`;
+  const section = (cls, title, txt) => txt
+    ? `<div class="sec ${cls}"><h4>${esc(title)}</h4><div class="txt">${esc(txt)}</div></div>` : '';
+
+  const expandedD = new Set();
+  const expandedP = new Set();
+  let decisionItems = [];
+  let projectItems = [];
+
+  function openDrawer() { overlay.classList.add('open'); decideDrawer.classList.add('open'); loadDecisions(); }
+  function closeDrawer() { overlay.classList.remove('open'); decideDrawer.classList.remove('open'); }
+  openDecideBtn.addEventListener('click', openDrawer);
+  decideDrawerClose.addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach((x) => x.classList.remove('active'));
+      t.classList.add('active');
+      const which = t.getAttribute('data-tab');
+      decisionPane.hidden = which !== 'decision';
+      projectPane.hidden = which !== 'project';
+      if (which === 'project') loadProjects(); else loadDecisions();
+    });
+  });
+
+  // ---------------- 决策卡 ----------------
+
+  async function loadDecisions() {
+    decisionList.innerHTML = '<div class="dp-empty">加载中...</div>';
+    try {
+      const data = await api('/api/decisions/list');
+      decisionItems = data.items || [];
+      renderDecisions();
+    } catch (e) {
+      decisionList.innerHTML = `<div class="dp-empty">加载失败：${esc(e.message)}</div>`;
+    }
+  }
+
+  function renderDecisions() {
+    if (!decisionItems.length) {
+      decisionList.innerHTML = '<div class="dp-empty">还没有决策卡。在上方写一个「要不要做 X」，让 AI 先做十维尽调。</div>';
+      return;
+    }
+    decisionList.innerHTML = decisionItems.map((x) => {
+      const open = expandedD.has(x.recordId);
+      let html = `<div class="dp-item" data-id="${esc(x.recordId)}">
+        <div class="dp-head">
+          <div class="dp-title">${esc(x.question)}</div>
+          ${pill(D_PILL, x.status)}
+        </div>
+        <div class="dp-meta">${esc(x.domain || '其他')}｜建卡 ${esc(x.createdAt || '')}${x.decidedAt ? '｜决定于 ' + esc(x.decidedAt) : ''}</div>`;
+      if (open) {
+        html += `<div class="dp-detail">
+          ${section('', '已知事实', x.facts)}
+          ${section('mine', '我的既有判断', x.ownJudgments)}
+          ${section('', '十维尽调', x.dueDiligence)}
+          ${section('', '最大未知', x.unknowns)}
+          ${section('', '可验证路径（拍板前最低成本）', x.verifyPath)}
+          ${section('', '可选方案', x.options)}
+          ${section('ai', 'AI 倾向（仅 AI 观点，不是你的决定）', x.aiLean)}
+          ${section('mine', '我的最终决定', x.finalDecision)}
+          ${section('mine', '复盘结论', x.review)}
+          <div class="act-row">
+            ${x.status === '🟡待我拍板' ? `
+              <button type="button" class="good" data-act="decide" data-status="✅决定做">✅ 决定做</button>
+              <button type="button" class="bad" data-act="decide" data-status="⛔决定不做">⛔ 决定不做</button>
+              <button type="button" data-act="decide" data-status="⏸暂缓">⏸ 暂缓</button>` : ''}
+            <button type="button" data-act="review">📝 回填复盘</button>
+          </div>
+        </div>`;
+      }
+      return html + '</div>';
+    }).join('');
+
+    decisionList.querySelectorAll('.dp-item').forEach((card) => {
+      const id = card.getAttribute('data-id');
+      const head = card.querySelector('.dp-head');
+      head.addEventListener('click', () => { expandedD.has(id) ? expandedD.delete(id) : expandedD.add(id); renderDecisions(); });
+      card.querySelectorAll('[data-act]').forEach((btn) => {
+        btn.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          const act = btn.getAttribute('data-act');
+          if (act === 'decide') await doDecide(id, btn.getAttribute('data-status'));
+          if (act === 'review') await doReview(id);
+        });
+      });
+    });
+  }
+
+  async function doDecide(id, status) {
+    const decision = prompt(`状态将改为「${status}」。\n写下你的最终决定和理由（可留空，之后在飞书补）：`, '');
+    if (decision === null) return;
+    const reviewAt = prompt('可选：计划复盘日期（如 2026-12-31），留空跳过：', '') || '';
+    try {
+      await post('/api/decisions/decide', { recordId: id, status, decision, reviewAt });
+      await loadDecisions();
+    } catch (e) { alert('操作失败：' + e.message); }
+  }
+
+  async function doReview(id) {
+    const conclusion = prompt('这次决策事后复盘：当时判断对不对、为什么？', '');
+    if (!conclusion || !conclusion.trim()) return;
+    try { await post('/api/decisions/review', { recordId: id, conclusion }); await loadDecisions(); }
+    catch (e) { alert('复盘失败：' + e.message); }
+  }
+
+  document.getElementById('newDecisionBtn').addEventListener('click', async () => {
+    const ta = document.getElementById('newDecisionInput');
+    const btn = document.getElementById('newDecisionBtn');
+    const q = ta.value.trim();
+    if (!q) { ta.focus(); return; }
+    btn.disabled = true; btn.textContent = 'AI 尽调中，通常 30-90 秒，请稍候…';
+    try {
+      await post('/api/decisions/create', { question: q });
+      ta.value = '';
+      await loadDecisions();
+    } catch (e) { alert('建卡失败：' + e.message); }
+    finally { btn.disabled = false; btn.textContent = '做十维尽调并建卡'; }
+  });
+
+  // ---------------- 项目卡 ----------------
+
+  async function loadProjects() {
+    projectList.innerHTML = '<div class="dp-empty">加载中...</div>';
+    try {
+      const data = await api('/api/projects/list');
+      projectItems = data.items || [];
+      renderProjects();
+    } catch (e) {
+      projectList.innerHTML = `<div class="dp-empty">加载失败：${esc(e.message)}</div>`;
+    }
+  }
+
+  function adviseHtml(a) {
+    if (!a || a._error) return `<div class="sec ai"><h4>AI 体检</h4><div class="txt">生成失败：${esc(a && a._error || '未知错误')}</div></div>`;
+    return `<div class="sec ai"><h4>AI 阶段体检（${esc(a['阶段判断'] || '—'}）</h4><div class="txt">
+理由：${esc(a['判断理由'] || '—')}
+建议下一步：${esc(a['更新后的下一步'] || '—')}
+阻塞破解：${esc(a['阻塞破解'] || '—')}
+本周期复盘要点：${esc(a['本周期复盘要点'] || '—')}
+退出条件检查：${esc(a['是否触及退出条件'] || '否')}
+（AI 只建议，是否调整由你决定）</div></div>`;
+  }
+
+  function renderProjects(adviseMap) {
+    adviseMap = adviseMap || {};
+    if (!projectItems.length) {
+      projectList.innerHTML = '<div class="dp-empty">还没有项目卡。在上方填名称，AI 会帮你拟 目标/里程碑/下一步/退出条件 草案。</div>';
+      return;
+    }
+    projectList.innerHTML = projectItems.map((x) => {
+      const open = expandedP.has(x.recordId);
+      let html = `<div class="dp-item" data-id="${esc(x.recordId)}">
+        <div class="dp-head">
+          <div class="dp-title">${esc(x.name)}</div>
+          ${pill(P_PILL, x.status)}
+        </div>
+        <div class="dp-meta">${esc(x.cycle || '')}｜${esc(x.domain || '其他')}${x.nextStep ? '｜下一步：' + esc(x.nextStep.slice(0, 40)) : ''}</div>`;
+      if (open) {
+        html += `<div class="dp-detail">
+          ${section('', '目标与成功标准', x.goal)}
+          ${section('', '阶段指标与里程碑', x.milestones)}
+          ${section('', '当前下一步', x.nextStep)}
+          ${section('', '阻塞与风险', x.blockers)}
+          ${section('', '继续/退出条件', x.exitRule)}
+          ${section('ai', 'AI 阶段判断', x.aiJudge)}
+          ${section('', '最近进展', x.latest)}
+          ${section('', '推进时间线（最近 20 条）', x.timeline)}
+          <div class="act-row">
+            <select class="dp-select">
+              ${P_STATUSES.map((s) => `<option ${s === x.status ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+            </select>
+            <button type="button" class="primary" data-act="setStatus">保存状态</button>
+            <button type="button" data-act="adviseOnly">AI 体检（不落表）</button>
+          </div>
+          <div class="inline-form">
+            <textarea placeholder="记录一条进展（做了什么、结果如何）…"></textarea>
+            <label class="check-row"><input type="checkbox" checked> 同时让 AI 给推进建议</label>
+            <div class="act-row"><button type="button" class="primary" data-act="addProgress">提交进展</button></div>
+          </div>
+          <div data-role="adviseBox">${adviseMap[x.recordId] ? adviseHtml(adviseMap[x.recordId]) : ''}</div>
+        </div>`;
+      }
+      return html + '</div>';
+    }).join('');
+
+    projectList.querySelectorAll('.dp-item').forEach((card) => {
+      const id = card.getAttribute('data-id');
+      card.querySelector('.dp-head').addEventListener('click', () => { expandedP.has(id) ? expandedP.delete(id) : expandedP.add(id); renderProjects(adviseMap); });
+      card.querySelectorAll('[data-act]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const act = btn.getAttribute('data-act');
+          if (act === 'setStatus') {
+            const sel = card.querySelector('.dp-select');
+            try { await post('/api/projects/status', { recordId: id, status: sel.value }); await loadProjects(); }
+            catch (e) { alert('保存失败：' + e.message); }
+          }
+          if (act === 'adviseOnly') {
+            btn.disabled = true; btn.textContent = '体检中…';
+            try {
+              const r = await post('/api/projects/advise', { recordId: id });
+              renderProjects(Object.assign({}, adviseMap, { [id]: r.advise }));
+            } catch (e) { alert('体检失败：' + e.message); btn.disabled = false; btn.textContent = 'AI 体检（不落表）'; }
+          }
+          if (act === 'addProgress') {
+            const ta = card.querySelector('.inline-form textarea');
+            const ck = card.querySelector('.inline-form input[type=checkbox]');
+            const note = ta.value.trim();
+            if (!note) { alert('先写点进展内容'); return; }
+            btn.disabled = true; btn.textContent = '提交中…';
+            try {
+              const r = await post('/api/projects/progress', { recordId: id, note, advise: ck.checked });
+              await loadProjects();
+              if (r.advise) { expandedP.add(id); const d2 = await api('/api/projects/list'); projectItems = d2.items || []; renderProjects({ [id]: r.advise }); }
+            } catch (e) { alert('提交失败：' + e.message); btn.disabled = false; btn.textContent = '提交进展'; }
+          }
+        });
+      });
+    });
+  }
+
+  document.getElementById('newProjectBtn').addEventListener('click', async () => {
+    const nameEl = document.getElementById('newProjectName');
+    const briefEl = document.getElementById('newProjectBrief');
+    const btn = document.getElementById('newProjectBtn');
+    const name = nameEl.value.trim();
+    if (!name) { nameEl.focus(); return; }
+    btn.disabled = true; btn.textContent = 'AI 规划中，通常 20-60 秒…';
+    try {
+      await post('/api/projects/create', { name, brief: briefEl.value.trim() });
+      nameEl.value = ''; briefEl.value = '';
+      document.querySelector('.tab[data-tab="project"]').click();
+    } catch (e) { alert('建卡失败：' + e.message); }
+    finally { btn.disabled = false; btn.textContent = '建项目卡（AI 拟规划草案）'; }
+  });
+})();
+</script>
+
+<script>
+// 注册 Service Worker（支持时才注册，调试时可在 DevTools → Application → Service Workers 卸载）
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function (e) {
+      console.warn('SW 注册失败:', e);
+    });
+  });
+}
+</script>
+</body>
+</html>

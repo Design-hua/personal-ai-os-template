@@ -1,0 +1,19 @@
+{
+  "name": "personal-ai-os",
+  "version": "1.0.0",
+  "description": "个人AI操作系统 - 网页端",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "playwright-core": "^1.61.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
